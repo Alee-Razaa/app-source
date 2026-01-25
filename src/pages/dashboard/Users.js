@@ -16,14 +16,35 @@ import {
 } from '@mui/material';
 import { ref, get } from 'firebase/database';
 import { database } from '../../firebase/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Search, SearchIconWrapper, StyledInputBase } from '../../components/Search';
+import { MagnifyingGlass } from 'phosphor-react';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
+  const query = searchParams.get('query')?.trim() || '';
+  const [searchQuery, setSearchQuery] = useState(query);
+
+  const filterUsers = (usersList, term) => {
+    const normalizedQuery = term.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return usersList;
+    }
+
+    return usersList.filter((user) => {
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      return (
+        fullName.toLowerCase().includes(normalizedQuery) ||
+        (user.email || '').toLowerCase().includes(normalizedQuery)
+      );
+    });
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -46,20 +67,23 @@ const UsersPage = () => {
           
           // Sort by signup time (newest first)
           usersData.sort((a, b) => {
-            const timeA = a.signupTime || 0;
-            const timeB = b.signupTime || 0;
+            const timeA = a.createdAt || a.signupTime || 0;
+            const timeB = b.createdAt || b.signupTime || 0;
             return timeB - timeA; // Newest first
           });
           
           console.log('Total users fetched:', usersData.length);
-          setUsers(usersData);
+          setAllUsers(usersData);
+          setUsers(filterUsers(usersData, searchQuery));
         } else {
           console.log('No users found in database');
           setUsers([]);
+          setAllUsers([]);
         }
       } catch (error) {
         console.error('Error fetching users:', error);
         setUsers([]);
+        setAllUsers([]);
       } finally {
         setLoading(false);
       }
@@ -68,9 +92,16 @@ const UsersPage = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    setSearchQuery(query);
+  }, [query]);
+
+  useEffect(() => {
+    setUsers(filterUsers(allUsers, searchQuery));
+  }, [allUsers, searchQuery]);
+
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
-    // In Realtime Database, serverTimestamp() returns a number (milliseconds)
     const date = new Date(timestamp);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
@@ -93,9 +124,9 @@ const UsersPage = () => {
   return (
     <Box sx={{ p: 3, minHeight: '100vh' }}>
       <Stack spacing={3}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={2}>
           <Typography variant="h4" gutterBottom>
-            All Users
+            {searchQuery ? `Search results for "${searchQuery}"` : 'All Users'}
           </Typography>
           <Stack direction="row" spacing={2}>
             <Button variant="outlined" onClick={() => navigate('/welcome')}>
@@ -105,6 +136,20 @@ const UsersPage = () => {
               Go to Chat
             </Button>
           </Stack>
+        </Stack>
+
+        <Stack sx={{ width: '100%', maxWidth: 480 }}>
+          <Search>
+            <SearchIconWrapper>
+              <MagnifyingGlass color="#709CE6" />
+            </SearchIconWrapper>
+            <StyledInputBase
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              inputProps={{ 'aria-label': 'search users' }}
+            />
+          </Search>
         </Stack>
 
         <Paper elevation={3}>
@@ -125,7 +170,7 @@ const UsersPage = () => {
                       {user.firstName} {user.lastName}
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{formatDate(user.signupTime)}</TableCell>
+                    <TableCell>{formatDate(user.createdAt || user.signupTime)}</TableCell>
                     <TableCell>
                       {user.uid === currentUser?.uid ? (
                         <Chip label="You" color="primary" size="small" />

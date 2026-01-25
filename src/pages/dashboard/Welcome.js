@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Button, Stack, Paper, Alert } from '@mui/material';
+import { MagnifyingGlass } from 'phosphor-react';
+import { Search, SearchIconWrapper, StyledInputBase } from '../../components/Search';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ref, get, push, serverTimestamp } from 'firebase/database';
@@ -9,6 +11,7 @@ const WelcomePage = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [debugStatus, setDebugStatus] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -58,6 +61,11 @@ const WelcomePage = () => {
     }
   };
 
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim();
+    navigate(query ? `/users?query=${encodeURIComponent(query)}` : '/users');
+  };
+
   return (
     <Box
       sx={{
@@ -82,7 +90,6 @@ const WelcomePage = () => {
           <Typography variant="h4" color="primary" gutterBottom>
             Welcome!
           </Typography>
-          
           <Typography variant="h6" color="text.secondary">
             You are successfully logged in
           </Typography>
@@ -98,6 +105,35 @@ const WelcomePage = () => {
               <strong>Email:</strong> {currentUser?.email}
             </Typography>
           </Box>
+
+          <Stack spacing={1.5} sx={{ width: '100%' }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Search the user directory
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+              <Box sx={{ flexGrow: 1, width: '100%' }}>
+                <Search>
+                  <SearchIconWrapper>
+                    <MagnifyingGlass color="#709CE6" />
+                  </SearchIconWrapper>
+                  <StyledInputBase
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        handleSearchSubmit();
+                      }
+                    }}
+                    inputProps={{ 'aria-label': 'search users' }}
+                  />
+                </Search>
+              </Box>
+              <Button variant="outlined" onClick={handleSearchSubmit} sx={{ minWidth: 140 }}>
+                Search Users
+              </Button>
+            </Stack>
+          </Stack>
           
           <Stack direction="row" spacing={2} justifyContent="center">
             <Button
@@ -130,7 +166,6 @@ const WelcomePage = () => {
           <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
             Debug Realtime Database Connection:
           </Typography>
-          
           <Stack direction="row" spacing={2} justifyContent="center">
             <Button
               variant="outlined"
@@ -139,7 +174,6 @@ const WelcomePage = () => {
             >
               Test Read
             </Button>
-            
             <Button
               variant="outlined"
               onClick={testDatabaseWrite}
@@ -148,9 +182,8 @@ const WelcomePage = () => {
               Test Write
             </Button>
           </Stack>
-
           {debugStatus && (
-            <Alert 
+            <Alert
               severity={debugStatus.includes('failed') ? 'error' : 'success'}
               sx={{ mt: 2 }}
             >

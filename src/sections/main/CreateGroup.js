@@ -6,7 +6,6 @@ import * as Yup from 'yup';
 import FormProvider from '../../components/hook-form/FormProvider';
 import { RHFTextField } from '../../components/hook-form';
 import RHFAutocomplete from '../../components/hook-form/RHFAutocomplete';
-import { multiple } from './../../components/Conversation/MsgTypes';
 
 const MEMBERS = ['Name 1', 'Name 2', 'Name 3' ];
 
@@ -16,7 +15,12 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const CreateGroupForm = ({handleClose}) =>{
   const NewGroupSchema = Yup.object().shape({
-    title: Yup.string().required('Title is required'),
+    title: Yup.string()
+      .required('Title is required')
+      .test('word-count', 'Title must be 12 words or fewer', (value = '') => {
+        const words = value.trim().split(/\s+/).filter(Boolean);
+        return words.length <= 12;
+      }),
     members: Yup.array().min(2, 'Must have at least 2 members')
   });
 
@@ -30,8 +34,7 @@ const CreateGroupForm = ({handleClose}) =>{
     defaultValues
   });
 
-  const {reset, watch, setError, handleSubmit, formState:{errors, isSubmitting, isSubmitSuccessful, isValid}}
-   = methods;
+  const { handleSubmit } = methods;
 
    const onSubmit = async (data) => {
     try {
@@ -45,7 +48,7 @@ const CreateGroupForm = ({handleClose}) =>{
    return (
     <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
-        <RHFTextField name='title' label='Title'/>
+        <RHFTextField name='title' label='Title' inputProps={{ maxLength: 120 }} />
         <RHFAutocomplete name='members' label='Members' multiple freeSolo 
         options={MEMBERS.map((option) => option)} ChipProps={{size: 'medium'}}/>
         <Stack spacing={2} direction='row' alignItems='center' justifyContent='end'>

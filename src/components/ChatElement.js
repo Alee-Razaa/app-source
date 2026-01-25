@@ -1,5 +1,5 @@
 import { Avatar, Badge, Box, Stack, Typography } from '@mui/material';
-import {useTheme , styled} from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import StyledBadge from './StyledBadge';
 
 //single chat element
@@ -19,8 +19,8 @@ const ChatElement = ({id,name, img, msg, time,online, unread}) => {
             <Avatar src={img} />
             </StyledBadge> : <Avatar src={img} /> }
             
-            <Stack spacing={0.3}>
-              <Typography variant='subtitle2'>
+            <Stack spacing={0.6}>
+              <Typography variant='subtitle2' sx={{ lineHeight: 1.4 }}>
                 {name}
               </Typography>
               <Typography variant='caption'>

@@ -10,9 +10,14 @@ const ProfileForm = () => {
 
   //validation rules 
   const loginSchema = Yup.object().shape({
-    name:Yup.string().required('Name is required'),
-    about:Yup.string().required('About is required'),
-    avatarUrl:Yup.string().required('Avatar is required').nullable(true),
+    name: Yup.string().required('Name is required'),
+    about: Yup.string()
+      .required('About is required')
+      .test('word-count', 'About must be 12 words or fewer', (value = '') => {
+        const words = value.trim().split(/\s+/).filter(Boolean);
+        return words.length <= 12;
+      }),
+    avatarUrl: Yup.string().required('Avatar is required').nullable(true),
   });
 
   const defaultValues = {
@@ -25,8 +30,7 @@ const ProfileForm = () => {
     defaultValues
   });
 
-  const {reset, setError, handleSubmit, formState:{errors}}
-   = methods;
+   const { reset, setError, handleSubmit, formState: { errors } } = methods;
 
    const onSubmit = async (data) =>{
         try {
@@ -48,8 +52,8 @@ const ProfileForm = () => {
         <Stack spacing={3}>
             {!!errors.afterSubmit && <Alert severity='error'>{errors.afterSubmit.message}</Alert>}
         
-        <RHFTextField name='name' label='Name' helperText={'This name is visible to your contacts'}/>
-        <RHFTextField multiline rows={3} maxRow={5} name='about' label='About'/>
+        <RHFTextField name='name' label='Name' helperText={'This name is visible to your contacts'} />
+        <RHFTextField multiline rows={3} maxRow={5} name='about' label='About' inputProps={{ maxLength: 120 }} />
         </Stack>
         <Stack direction={'row'} justifyContent='end'>
             <Button color='primary' size='large' type='submit' variant='outlined'>Save</Button>
